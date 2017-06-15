@@ -1,0 +1,2 @@
+<canvas canvas-id="canvas1" class="myCanvas" style="width:{{chartWidth}}px;height:{{chartHeight}}px;"/>
+<button class="downloadChart" bindtap="onSaveClick">保存图片</button>

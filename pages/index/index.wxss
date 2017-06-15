@@ -1,0 +1,15 @@
+page {
+  text-align: center;
+  background-color: #ffffff;
+}
+.myCanvas{
+  background-color: #f4f4f4;
+}
+.downloadChart {
+  font-size: 16px;
+  background: #699fed;
+  border-radius: 6px;
+  color: white;
+  width: 70%;
+  margin-top: 32px;
+}
