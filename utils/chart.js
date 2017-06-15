@@ -45,7 +45,18 @@ var dataSet = {
     size: 10,
     data: []
   },
-  series: []
+  series: [
+    {
+      name: "",
+      category: "bar",
+      data: []
+    },
+    {
+      name: "",
+      category: "line",
+      data: []
+    }
+  ]
 }
 
 function init(page, canvas, data) {

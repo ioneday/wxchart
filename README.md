@@ -14,8 +14,8 @@
 wxml：
 
 ```javascript
+//自适应屏幕宽度
 <canvas style="width:{{chartWidth}}px;height:{{chartHeight}}px;"/>
-
 ```
 
 js：
