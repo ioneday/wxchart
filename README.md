@@ -3,11 +3,13 @@
 
 
 
-![barchart](https://github.com/ioneday/wxchart/blob/master/image/barchart.png)
+![barchart](https://github.com/ioneday/wxchart/blob/master/image/barchart.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/line.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/barline.png)
 
 
 
-#### Useage
+
+
+### Useage
 
 wxml：
 
@@ -36,13 +38,15 @@ chart.draw(this, 'canvasId', {
   },
   series: [
     {
-      name: "第一季度",
-      data: [28, 35, 99, 16, 48, 27, 63, 25]
-    }
-    , {
-      name: "第二季度",
-      data: [73, 63, 25, 73, 17, 49, 35, 91]
-    }
+          name: "第一季度",
+          category: "bar", //切换柱状图或折线图
+          data: [37, 63, 60, 78, 92, 63, 57, 48]
+        },
+        {
+          name: "第二季度",
+          category: "line",
+          data: [20, 35, 38, 59, 48, 27, 43, 35]
+        }
   ]
 });
 ```

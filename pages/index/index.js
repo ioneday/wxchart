@@ -16,17 +16,19 @@ Page({
       series: [
         {
           name: "第一季度",
-          data: [28, 35, 99, 16, 48, 27, 63, 25]
-        }
-        , {
+          category: "bar",
+          data: [37, 63, 60, 78, 92, 63, 57, 48]
+        },
+        {
           name: "第二季度",
-          data: [73, 63, 25, 73, 17, 49, 35, 91]
+          category: "line",
+          data: [20, 35, 38, 59, 48, 27, 43, 35]
         }
       ]
     });
   },
   onSaveClick: function () {
-    chart.saveCanvans(function(){
+    chart.saveCanvans(function () {
 
     });
   }

@@ -10,8 +10,9 @@ var pageObj = null;
 var chartOpt = {
   axisMark: [],
   barLength: 0,
+  barNum:0,
   // bgColor: "transparent",
-  lineColor:"#c2c2c2",
+  lineColor: "#c2c2c2",
   bgColor: "#ffffff",
   chartWidth: 0,
   chartHeight: 0,
@@ -34,11 +35,11 @@ var dataSet = {
     size: 16,
     text: ""
   },
-  legend:{
-    color:"",
-    size:12
+  legend: {
+    color: "",
+    size: 12
   },
-  color: ['#394655', '#74DAE5', '#ED7672', '#F3AA59', '#FEE746', '#DAEE59', '#87E287', '#CFDCED', '#DC7BDF', '#6184FC'],
+  color: ['#74DAE5', '#394655',  '#ED7672', '#F3AA59', '#FEE746', '#DAEE59', '#87E287', '#CFDCED', '#DC7BDF', '#6184FC'],
   xAxis: {
     color: "#666A73",
     size: 10,
@@ -76,7 +77,7 @@ function initCanvas(page, canvasId) {
   var textWidth = util.mesureText('100', dataSet.xAxis.size);
   var legendHeight = dataSet.series.length > 1 ? (chartOpt.legendHeight + chartOpt.chartSpace * 2) : 0;
 
-  chartOpt.axisLeft = chartOpt.left + (dataSet.hideYaxis?0:textWidth + chartOpt.textSpace);
+  chartOpt.axisLeft = chartOpt.left + (dataSet.hideYaxis ? 0 : textWidth + chartOpt.textSpace);
   chartOpt.axisBottom = chartOpt.bottom - dataSet.xAxis.size - chartOpt.textSpace - legendHeight;
   chartOpt.axisTop = chartOpt.top + dataSet.title.size + chartOpt.textSpace + dataSet.xAxis.size * 2;
 
@@ -117,6 +118,9 @@ function checkData(data) {
     if (itemLenght > chartOpt.barLength) {
       chartOpt.barLength = itemLenght;
     }
+    if (item.category == 'bar'){
+      chartOpt.barNum += 1;
+    }
     for (var k = 0; k < itemLenght; k++) {
       value.push(item.data[k]);
     }
@@ -137,7 +141,8 @@ function drawChart(ctx) {
   drawTitle(ctx);
   drawLegend(ctx);
 
-  drawBar(ctx);
+  // drawBarChart(ctx);
+  drawCharts(ctx);
   ctx.draw();
 }
 /**
@@ -195,17 +200,17 @@ function drawYaxis(ctx) {
   //绘制Y轴横线
   ctx.setLineWidth(0.5);
   ctx.setLineCap('round');
-  
+
   var height = (chartOpt.axisBottom - chartOpt.axisTop) / (chartOpt.axisMark.length - 1);
   //绘制Y轴显示数字
   for (var i = 0; i < chartOpt.axisMark.length; i++) {
     var y = chartOpt.axisBottom - height * i;
-    if (i > 0){
+    if (i > 0) {
       ctx.setStrokeStyle(chartOpt.lineColor);
       util.drawDashLine(ctx, chartOpt.axisLeft, y, chartOpt.right, y);
     }
-    
-    if (!dataSet.hideYaxis){
+
+    if (!dataSet.hideYaxis) {
       ctx.setFillStyle(dataSet.xAxis.color);
       ctx.setFontSize(dataSet.xAxis.size)
       ctx.setTextAlign('right');
@@ -213,7 +218,7 @@ function drawYaxis(ctx) {
     }
   }
 }
-  
+
 /**
  * 绘制图例
  */
@@ -221,36 +226,67 @@ function drawLegend(ctx) {
   var series = dataSet.series;
   if (series.length > 1) {
     var textWidth = util.mesureText(series[0].name, dataSet.xAxis.size);
-    var legendWidth = chartOpt.legendWidth + textWidth + chartOpt.chartSpace *2;
+    var legendWidth = chartOpt.legendWidth + textWidth + chartOpt.chartSpace * 2;
     var startX = (chartOpt.chartWidth / 2) - (legendWidth * series.length) / 2;
 
     for (var i = 0; i < series.length; i++) {
-      var lx = startX + legendWidth * i + chartOpt.legendWidth * i;
+      var x = startX + legendWidth * i + chartOpt.legendWidth * i;
+      var y = chartOpt.bottom - chartOpt.legendHeight;
+      
       ctx.setFillStyle(dataSet.xAxis.color);
       ctx.setFontSize(dataSet.legend.size)
       ctx.setTextAlign('left');
-      ctx.fillText(series[i].name, lx + chartOpt.chartSpace + chartOpt.legendWidth,chartOpt.bottom);
+      ctx.fillText(series[i].name, x + chartOpt.chartSpace + chartOpt.legendWidth, chartOpt.bottom);
 
-      ctx.setFillStyle(getColor(i));
-      ctx.fillRect(lx, chartOpt.bottom - chartOpt.legendHeight + 1, chartOpt.legendWidth, chartOpt.legendHeight);
-      // util.drawRoundBar(ctx, lx, chartOpt.bottom - chartOpt.legendHeight, chartOpt.legendWidth, chartOpt.legendHeight, 3);
+      var color = getColor(i);
+      ctx.setFillStyle(color);
+      ctx.setLineWidth(2);
+      ctx.setStrokeStyle(color);
+      if (series[i].category == 'bar'){
+        ctx.fillRect(x, y+1, chartOpt.legendWidth, chartOpt.legendHeight);
+      } else if (series[i].category == 'line') {
+        var lx = x + chartOpt.legendWidth / 2;
+        var ly = y + chartOpt.legendHeight / 2 + 1;
+        ctx.beginPath();
+        ctx.moveTo(x, ly);
+        ctx.lineTo(x + chartOpt.legendWidth, ly);
+        ctx.stroke();
+        ctx.closePath();
+        drawPoint(ctx, lx, ly, chartOpt.legendHeight/2, color);
+        drawPoint(ctx, lx, ly, chartOpt.legendHeight/4, chartOpt.bgColor);
+      }
+    }
+  }
+}
+function drawTips(ctx, text, x, y, color) {
+  ctx.setFillStyle(color);
+  ctx.setFontSize(dataSet.xAxis.size)
+  ctx.setTextAlign('center');
+  ctx.fillText(text, x, y);
+}
+function drawCharts(ctx){
+  var series = dataSet.series;
+  for (var i = 0; i < series.length; i++) {
+    var category = series[i].category;
+    var barWidth = (chartOpt.right - chartOpt.axisLeft) / chartOpt.barLength;
+    var barHeight = chartOpt.axisBottom - chartOpt.axisTop;
+    var maxMark = chartOpt.axisMark[chartOpt.axisMark.length - 1];
+
+    if (category == "bar"){
+      barWidth = barWidth - chartOpt.chartSpace;
+      drawBarChart(ctx,i,series,barWidth,barHeight,maxMark);
+    } else if (category == "line"){
+      drawLineChart(ctx, i, series, barWidth, barHeight, maxMark);
     }
   }
 }
 /**
  * 绘制柱状图
  */
-function drawBar(ctx) {
-  var barWidth = (chartOpt.right - chartOpt.axisLeft - chartOpt.barLength * chartOpt.chartSpace) / chartOpt.barLength;
-
-  var barHeight = chartOpt.axisBottom - chartOpt.axisTop;
-
-  var maxMark = chartOpt.axisMark[chartOpt.axisMark.length - 1];
-
-  var series = dataSet.series;
-  for (var i = 0; i < series.length; i++) {
+function drawBarChart(ctx, i, series, barWidth, barHeight, maxMark) {
     var item = series[i];
-    var itemWidth = barWidth / series.length;
+    var itemWidth = barWidth / chartOpt.barNum;
+
     for (var k = 0; k < item.data.length; k++) {
       var itemHeight = barHeight * (item.data[k] / maxMark);
       var x = (barWidth * k + chartOpt.axisLeft + k * chartOpt.chartSpace + (chartOpt.chartSpace / 2)) + (i * itemWidth);
@@ -262,13 +298,42 @@ function drawBar(ctx) {
       drawTips(ctx, item.data[k], x + itemWidth / 2, y - chartOpt.textSpace, color);
       // util.drawRoundBar(ctx, x, y, itemWidth, itemHeight, 3);
     }
-  }
 }
-function drawTips(ctx, text, x, y, color) {
+
+function drawLineChart(ctx, i, series, barWidth, barHeight, maxMark) {
+    var item = series[i];
+    var color = getColor(i);
+    ctx.setLineWidth(2);
+    ctx.setStrokeStyle(color);
+    ctx.beginPath();
+    for (var k = 0; k < item.data.length; k++) {
+      var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
+      if (k == 0) {
+        ctx.moveTo(point.x, point.y);
+      } else {
+        ctx.lineTo(point.x, point.y);
+      }
+    }
+    ctx.stroke();
+    ctx.closePath();
+    for (var k = 0; k < item.data.length; k++) {
+      var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
+      drawPoint(ctx, point.x, point.y, 3, color);
+      drawPoint(ctx, point.x, point.y, 1, chartOpt.bgColor);
+      drawTips(ctx, item.data[k], point.x, point.y - chartOpt.chartSpace, color);
+    }
+}
+function getLinePoint(k, item, barWidth, barHeight, maxMark) {
+  var x = barWidth * k + chartOpt.axisLeft + barWidth / 2;
+  var y = chartOpt.axisBottom - (barHeight * (item.data[k] / maxMark));
+  return { x: x, y: y }
+}
+function drawPoint(ctx, x, y, radius, color) {
   ctx.setFillStyle(color);
-  ctx.setFontSize(dataSet.xAxis.size)
-  ctx.setTextAlign('center');
-  ctx.fillText(text, x, y);
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.closePath();
 }
 
 /**
