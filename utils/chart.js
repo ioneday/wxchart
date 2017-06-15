@@ -290,15 +290,15 @@ function saveCanvans(func) {
     canvasId: canvasId,
     success: function (res) {
       console.log(res.tempFilePath)
-      wx.previewImage({
-        urls: [res.tempFilePath],
-      })
-      // wx.saveImageToPhotosAlbum({
-      //   filePath: res.tempFilePath,
-      //   success(ress) {
-      //     console.log(ress)
-      //   }
+      // wx.previewImage({
+      //   urls: [res.tempFilePath],
       // })
+      wx.saveImageToPhotosAlbum({
+        filePath: res.tempFilePath,
+        success(ress) {
+          console.log(ress)
+        }
+      })
     }
   })
 }
