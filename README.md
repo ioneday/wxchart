@@ -3,4 +3,4 @@
 
 
 
-![barchart](https://github.com/ioneday/wxchart/image/barchart.png)
+![barchart](https://github.com/ioneday/wxchart/blob/master/image/barchart.png)
