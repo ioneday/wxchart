@@ -8,9 +8,11 @@ var util = require("chartUtils.js");
 var canvasId = '';
 var pageObj = null;
 var chartOpt = {
+  chartPieCount: 0,
+  hideXYaxis: false,
   axisMark: [],
   barLength: 0,
-  barNum:0,
+  barNum: 0,
   // bgColor: "transparent",
   lineColor: "#c2c2c2",
   bgColor: "#ffffff",
@@ -39,7 +41,7 @@ var dataSet = {
     color: "",
     size: 12
   },
-  color: ['#74DAE5', '#394655',  '#ED7672', '#F3AA59', '#FEE746', '#DAEE59', '#87E287', '#CFDCED', '#DC7BDF', '#6184FC'],
+  color: ['#74DAE5', '#394655', '#FEE746', '#B9A39B', '#C18734', '#9EC3AD', '#6D9BA3', '#7E9C82', '#DAEE59', '#CFDCED'],
   xAxis: {
     color: "#666A73",
     size: 10,
@@ -129,12 +131,20 @@ function checkData(data) {
     if (itemLenght > chartOpt.barLength) {
       chartOpt.barLength = itemLenght;
     }
-    if (item.category == 'bar'){
-      chartOpt.barNum += 1;
-    }
     for (var k = 0; k < itemLenght; k++) {
       value.push(item.data[k]);
     }
+    if (item.category == 'bar') {
+      chartOpt.barNum += 1;
+
+    }
+    if (item.category == 'pie') {
+      chartOpt.hideXYaxis = true;
+      for (var k = 0; k < itemLenght; k++) {
+        chartOpt.chartPieCount += item.data[k];
+      }
+    }
+
   }
 
   var minNum = Math.min.apply(null, value);
@@ -147,10 +157,12 @@ function checkData(data) {
  */
 function drawChart(ctx) {
   drawBackground(ctx);
-  drawXaxis(ctx);
-  drawYaxis(ctx);
   drawTitle(ctx);
   drawLegend(ctx);
+  if (!chartOpt.hideXYaxis) {
+    drawXaxis(ctx);
+    drawYaxis(ctx);
+  }
 
   // drawBarChart(ctx);
   drawCharts(ctx);
@@ -235,15 +247,33 @@ function drawYaxis(ctx) {
  */
 function drawLegend(ctx) {
   var series = dataSet.series;
-  if (series.length > 1) {
-    var textWidth = util.mesureText(series[0].name, dataSet.xAxis.size);
-    var legendWidth = chartOpt.legendWidth + textWidth + chartOpt.chartSpace * 2;
-    var startX = (chartOpt.chartWidth / 2) - (legendWidth * series.length) / 2;
 
-    for (var i = 0; i < series.length; i++) {
+  for (var i = 0; i < series.length; i++) {
+    var names = series[i].name;
+    var isPie = series[i].category == 'pie';
+    var textWidth = util.mesureText(isPie?names[0]:names, dataSet.xAxis.size);
+    var legendWidth = chartOpt.legendWidth + textWidth + chartOpt.chartSpace * 2;
+    var startX = (chartOpt.chartWidth / 2) - (legendWidth * (isPie ?names.length:series.length)) / 2;
+
+    if (series[i].category == 'pie') {
+      for (var k = 0; k < names.length; k++) {
+        var x = startX + legendWidth * k;
+        var y = chartOpt.bottom - chartOpt.legendHeight;
+
+        ctx.setFillStyle(dataSet.xAxis.color);
+        ctx.setFontSize(dataSet.legend.size)
+        ctx.setTextAlign('left');
+        ctx.fillText(names[k], x + chartOpt.textSpace + chartOpt.legendWidth, chartOpt.bottom);
+
+        var color = getColor(k);
+        ctx.setFillStyle(color);
+        ctx.fillRect(x, y + 1, chartOpt.legendWidth, chartOpt.legendHeight);
+      }
+    } else {
+
       var x = startX + legendWidth * i + chartOpt.legendWidth * i;
       var y = chartOpt.bottom - chartOpt.legendHeight;
-      
+
       ctx.setFillStyle(dataSet.xAxis.color);
       ctx.setFontSize(dataSet.legend.size)
       ctx.setTextAlign('left');
@@ -253,8 +283,8 @@ function drawLegend(ctx) {
       ctx.setFillStyle(color);
       ctx.setLineWidth(2);
       ctx.setStrokeStyle(color);
-      if (series[i].category == 'bar'){
-        ctx.fillRect(x, y+1, chartOpt.legendWidth, chartOpt.legendHeight);
+      if (series[i].category == 'bar') {
+        ctx.fillRect(x, y + 1, chartOpt.legendWidth, chartOpt.legendHeight);
       } else if (series[i].category == 'line') {
         var lx = x + chartOpt.legendWidth / 2;
         var ly = y + chartOpt.legendHeight / 2 + 1;
@@ -263,19 +293,25 @@ function drawLegend(ctx) {
         ctx.lineTo(x + chartOpt.legendWidth, ly);
         ctx.stroke();
         ctx.closePath();
-        drawPoint(ctx, lx, ly, chartOpt.legendHeight/2, color);
-        drawPoint(ctx, lx, ly, chartOpt.legendHeight/4, chartOpt.bgColor);
+        drawPoint(ctx, lx, ly, chartOpt.legendHeight / 2, color);
+        drawPoint(ctx, lx, ly, chartOpt.legendHeight / 4, chartOpt.bgColor);
       }
     }
   }
 }
-function drawTips(ctx, text, x, y, color) {
+/**
+ * 绘制数据标签
+ */
+function drawToolTips(ctx, text, x, y, color) {
   ctx.setFillStyle(color);
   ctx.setFontSize(dataSet.xAxis.size)
   ctx.setTextAlign('center');
   ctx.fillText(text, x, y);
 }
-function drawCharts(ctx){
+/**
+ * 画图
+ */
+function drawCharts(ctx) {
   var series = dataSet.series;
   for (var i = 0; i < series.length; i++) {
     var category = series[i].category;
@@ -283,11 +319,13 @@ function drawCharts(ctx){
     var barHeight = chartOpt.axisBottom - chartOpt.axisTop;
     var maxMark = chartOpt.axisMark[chartOpt.axisMark.length - 1];
 
-    if (category == "bar"){
+    if (category == "bar") {
       barWidth = barWidth - chartOpt.chartSpace;
-      drawBarChart(ctx,i,series,barWidth,barHeight,maxMark);
-    } else if (category == "line"){
+      drawBarChart(ctx, i, series, barWidth, barHeight, maxMark);
+    } else if (category == "line") {
       drawLineChart(ctx, i, series, barWidth, barHeight, maxMark);
+    } else if (category == 'pie') {
+      drawPieChart(ctx, i, series);
     }
   }
 }
@@ -295,44 +333,45 @@ function drawCharts(ctx){
  * 绘制柱状图
  */
 function drawBarChart(ctx, i, series, barWidth, barHeight, maxMark) {
-    var item = series[i];
-    var itemWidth = barWidth / chartOpt.barNum;
+  var item = series[i];
+  var itemWidth = barWidth / chartOpt.barNum;
 
-    for (var k = 0; k < item.data.length; k++) {
-      var itemHeight = barHeight * (item.data[k] / maxMark);
-      var x = (barWidth * k + chartOpt.axisLeft + k * chartOpt.chartSpace + (chartOpt.chartSpace / 2)) + (i * itemWidth);
-      var y = chartOpt.axisBottom - itemHeight;
-      var color = getColor(series.length <= 1 ? k : i);
-      ctx.setFillStyle(color);
-      ctx.fillRect(x, y, itemWidth, itemHeight);
+  for (var k = 0; k < item.data.length; k++) {
+    var itemHeight = barHeight * (item.data[k] / maxMark);
+    var x = (barWidth * k + chartOpt.axisLeft + k * chartOpt.chartSpace + (chartOpt.chartSpace / 2)) + (i * itemWidth);
+    var y = chartOpt.axisBottom - itemHeight;
+    var color = getColor(series.length <= 1 ? k : i);
+    ctx.setFillStyle(color);
+    ctx.fillRect(x, y, itemWidth, itemHeight);
 
-      drawTips(ctx, item.data[k], x + itemWidth / 2, y - chartOpt.textSpace, color);
-      // util.drawRoundBar(ctx, x, y, itemWidth, itemHeight, 3);
-    }
+    drawToolTips(ctx, item.data[k], x + itemWidth / 2, y - chartOpt.textSpace, color);
+  }
 }
-
+/**
+ * 绘制折线图
+ */
 function drawLineChart(ctx, i, series, barWidth, barHeight, maxMark) {
-    var item = series[i];
-    var color = getColor(i);
-    ctx.setLineWidth(2);
-    ctx.setStrokeStyle(color);
-    ctx.beginPath();
-    for (var k = 0; k < item.data.length; k++) {
-      var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
-      if (k == 0) {
-        ctx.moveTo(point.x, point.y);
-      } else {
-        ctx.lineTo(point.x, point.y);
-      }
+  var item = series[i];
+  var color = getColor(i);
+  ctx.setLineWidth(2);
+  ctx.setStrokeStyle(color);
+  ctx.beginPath();
+  for (var k = 0; k < item.data.length; k++) {
+    var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
+    if (k == 0) {
+      ctx.moveTo(point.x, point.y);
+    } else {
+      ctx.lineTo(point.x, point.y);
     }
-    ctx.stroke();
-    ctx.closePath();
-    for (var k = 0; k < item.data.length; k++) {
-      var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
-      drawPoint(ctx, point.x, point.y, 3, color);
-      drawPoint(ctx, point.x, point.y, 1, chartOpt.bgColor);
-      drawTips(ctx, item.data[k], point.x, point.y - chartOpt.chartSpace, color);
-    }
+  }
+  ctx.stroke();
+  ctx.closePath();
+  for (var k = 0; k < item.data.length; k++) {
+    var point = getLinePoint(k, item, barWidth, barHeight, maxMark);
+    drawPoint(ctx, point.x, point.y, 3, color);
+    drawPoint(ctx, point.x, point.y, 1, chartOpt.bgColor);
+    drawToolTips(ctx, item.data[k], point.x, point.y - chartOpt.chartSpace, color);
+  }
 }
 function getLinePoint(k, item, barWidth, barHeight, maxMark) {
   var x = barWidth * k + chartOpt.axisLeft + barWidth / 2;
@@ -346,7 +385,70 @@ function drawPoint(ctx, x, y, radius, color) {
   ctx.fill();
   ctx.closePath();
 }
+/**
+ * 绘制饼图
+ */
+function drawPieChart(ctx, i, series) {
+  var item = series[i];
 
+  var x = (chartOpt.right - chartOpt.left) / 2 + chartOpt.left;
+  var radius = (chartOpt.axisBottom - chartOpt.axisTop) / 3;
+  var y = (chartOpt.axisBottom - chartOpt.axisTop) / 2 + chartOpt.axisTop
+
+  var lastAngel = 0;
+  for (var k = 0; k < item.data.length; k++) {
+    var color = getColor(k);
+    var curAngel = 2 / chartOpt.chartPieCount * item.data[k];
+    var precent = 100 / chartOpt.chartPieCount * item.data[k];
+
+    drawPieToolTips(ctx, item.data[k] + "(" + Math.round(precent) + "%)", color, x, y, radius, lastAngel, curAngel);
+
+    ctx.setFillStyle(color);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.arc(x, y, radius, (lastAngel - 0.5) * Math.PI, (lastAngel + curAngel - 0.5) * Math.PI);
+    ctx.fill();
+    ctx.closePath();
+    lastAngel += curAngel;
+
+  }
+}
+/**
+ * 绘制饼图数据标签
+ */
+function drawPieToolTips(ctx, value, color, x, y, radius, lastAngel, curAngel) {
+  var textWidth = util.mesureText(value, dataSet.xAxis.size);
+  var cosc = Math.cos((lastAngel - 0.5 + curAngel / 2) * Math.PI);
+  var sinc = Math.sin((lastAngel - 0.5 + curAngel / 2) * Math.PI);
+  var x1 = (radius) * cosc + x;
+  var y1 = (radius) * sinc + y;
+
+  var x2 = (radius + 20) * cosc + x;
+  var y2 = (radius + 20) * sinc + y;
+
+  ctx.setFillStyle(color);
+  ctx.setTextAlign(x2 < x1 ? 'right' : 'left');
+  ctx.setFontSize(dataSet.xAxis.size);
+  ctx.setStrokeStyle(color);
+  ctx.setLineWidth(1);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  if (x1 >= x && y1 < y) {
+    ctx.quadraticCurveTo(x2, y2, x2 + 15, y2)
+    ctx.fillText(value, x2 + 15 + chartOpt.textSpace, y2 + dataSet.xAxis.size / 2);
+  } else if (x1 >= x && y1 >= y) {
+    ctx.quadraticCurveTo(x2, y2, x2 + 15, y2)
+    ctx.fillText(value, x2 + 15 + chartOpt.textSpace, y2 + dataSet.xAxis.size / 2);
+  } else if (x1 < x && y1 >= y) {
+    ctx.quadraticCurveTo(x2, y2, x2 - 15, y2)
+    ctx.fillText(value, x2 - 15 - chartOpt.textSpace, y2 + dataSet.xAxis.size / 2);
+  } else if (x1 < x && y1 < y) {
+    ctx.quadraticCurveTo(x2, y2, x2 - 15, y2)
+    ctx.fillText(value, x2 - 15 - chartOpt.textSpace, y2 + dataSet.xAxis.size / 2);
+  }
+  ctx.stroke();
+  ctx.closePath();
+}
 /**
  * 获取柱状图颜色值，循环渲染
  */

@@ -3,7 +3,7 @@
 
 
 
-![barchart](https://github.com/ioneday/wxchart/blob/master/image/barchart.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/line.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/barline.png)
+![barchart](https://github.com/ioneday/wxchart/blob/master/image/barchart.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/line.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/barline.png)![linechart](https://github.com/ioneday/wxchart/blob/master/image/pie.png)
 
 
 
@@ -46,6 +46,11 @@ chart.draw(this, 'canvasId', {
           name: "第二季度",
           category: "line",
           data: [20, 35, 38, 59, 48, 27, 43, 35]
+        },
+        {
+          name: ['北京', '上海', '杭州', '深圳', '广州', '成都'],
+          category: "pie",//饼图不能与以上类型（bar、line）同时绘制
+          data: [40, 38, 39, 28, 27, 33]
         }
   ]
 });
